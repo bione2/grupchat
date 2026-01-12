@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Study Hub</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">Study Hub Group</div>
+
+    <div class="chat-box" id="chat-box"></div>
+
+    <!-- CHAT INPUT + UPLOAD FOTO -->
+    <div class="chat-input">
+        <button class="upload-btn"
+            onclick="document.getElementById('imageInput').click()">📷</button>
+
+        <input type="file" id="imageInput" accept="image/*">
+
+        <input id="msg" placeholder="Ketik pesan... (@bot jadwal hari ini)">
+
+        <button onclick="sendMessage()">➤</button>
+    </div>
+</div>
+
+<script>
+const username = "{{ username }}";
+const socket = io();
+
+/* ================== KIRIM PESAN TEKS ================== */
+function sendMessage() {
+    const msg = document.getElementById("msg");
+    if (!msg.value.trim()) return;
+
+    socket.emit("send_message", {
+        username: username,
+        message: msg.value
+    });
+
+    msg.value = "";
+}
+
+/* ================== TERIMA PESAN TEKS ================== */
+socket.on("receive_message", data => {
+    const box = document.getElementById("chat-box");
+    const isMe = data.username === username;
+    const avatarClass = data.username === "🤖 Study Hub Bot" ? "avatar bot" : "avatar";
+
+    box.innerHTML += `
+        <div class="message ${isMe ? "me" : ""}">
+            ${!isMe ? `<div class="${avatarClass}">${data.username[0]}</div>` : ""}
+            <div>
+                <div class="name">${data.username}</div>
+                <div class="bubble">${data.message}</div>
+            </div>
+        </div>
+    `;
+    box.scrollTop = box.scrollHeight;
+});
+
+/* ================== KIRIM FOTO ================== */
+function sendImage() {
+    const fileInput = document.getElementById("imageInput");
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        socket.emit("send_image", {
+            username: username,
+            image: reader.result
+        });
+    };
+    reader.readAsDataURL(file);
+
+    fileInput.value = "";
+}
+
+document.getElementById("imageInput")
+    .addEventListener("change", sendImage);
+
+/* ================== TERIMA FOTO ================== */
+socket.on("receive_image", data => {
+    const box = document.getElementById("chat-box");
+    const isMe = data.username === username;
+
+    box.innerHTML += `
+        <div class="message ${isMe ? "me" : ""}">
+            ${!isMe ? `<div class="avatar">${data.username[0]}</div>` : ""}
+            <div>
+                <div class="name">${data.username}</div>
+                <div class="bubble image">
+                    <img src="${data.image}">
+                    <br>
+                    <a href="${data.image}" download>⬇ Download</a>
+                </div>
+            </div>
+        </div>
+    `;
+    box.scrollTop = box.scrollHeight;
+});
+</script>
+
+</body>
+</html>
