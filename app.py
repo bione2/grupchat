@@ -9,18 +9,14 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def index():
     return render_template('index.html')
 
-# ================= SOCKET.IO EVENTS =================
+# ================= SOCKET.IO =================
 @socketio.on('send_message')
 def handle_message(data):
-    username = data.get('username')
-    message = data.get('message')
-    emit('receive_message', {'username': username, 'message': message}, broadcast=True)
+    emit('receive_message', data, broadcast=True)
 
 @socketio.on('send_image')
 def handle_image(data):
-    username = data.get('username')
-    image = data.get('image')
-    emit('receive_image', {'username': username, 'image': image}, broadcast=True)
+    emit('receive_image', data, broadcast=True)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)
